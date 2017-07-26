@@ -21,6 +21,7 @@ Author: Daniel Kroening, kroening@kroening.com
 /// generate array constraints
 void bv_refinementt::post_process_arrays()
 {
+  #if 0
   collect_indices();
   // at this point all indices should in the index set
 
@@ -31,11 +32,13 @@ void bv_refinementt::post_process_arrays()
   lazy_arrays=do_array_refinement;
   add_array_constraints();
   freeze_lazy_constraints();
+  #endif
 }
 
 /// check whether counterexample is spurious
 void bv_refinementt::arrays_overapproximated()
 {
+  #if 0
   if(!do_array_refinement)
     return;
 
@@ -101,12 +104,13 @@ void bv_refinementt::arrays_overapproximated()
           << " inactive array expressions" << eom;
   if(nb_active > 0)
     progress=true;
+  #endif
 }
-
 
 /// freeze symbols for incremental solving
 void bv_refinementt::freeze_lazy_constraints()
 {
+  #if 0
   if(!lazy_arrays)
     return;
 
@@ -125,4 +129,5 @@ void bv_refinementt::freeze_lazy_constraints()
           prop.set_frozen(*b_it);
     }
   }
+  #endif
 }

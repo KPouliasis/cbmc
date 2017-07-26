@@ -14,7 +14,8 @@ Author: Daniel Kroening, kroening@kroening.com
 
 #include <set>
 
-#include <util/union_find.h>
+#include <util/numbering.h>
+#include <util/graph.h>
 
 #include "equality.h"
 
@@ -48,10 +49,39 @@ protected:
     add_array_constraints();
   }
 
+  // adds all the constraints eagerly
+  void add_array_constraints();
+  void add_array_Ackermann_constraints();
+  void collect_arrays(const exprt &);
+  void collect_indices();
+  void collect_indices(const exprt &);
+
+  class weg_edget
+  {
+  public:
+    literalt condition;
+  };
+
+  // weak equality graph
+  class weg_nodet:public graph_nodet<weg_edget>
+  {
+    exprt array;
+  };
+
+  typedef grapht<weg_nodet> wegt;
+  wegt weg;
+  
+  void add_weg_edge(std::size_t a1, std::size_t a2, literalt l)
+  {
+    weg.edge(a1, a2).condition=l;
+    weg.edge(a2, a1).condition=l;
+  }
+
   struct array_equalityt
   {
     literalt l;
     exprt f1, f2;
+    std::size_t a1, a2;
   };
 
   // the list of all equalities between arrays
@@ -60,47 +90,38 @@ protected:
   typedef std::list<array_equalityt> array_equalitiest;
   array_equalitiest array_equalities;
 
-  // this is used to find the clusters of arrays being compared
-  union_find<exprt> arrays;
+  // this is used to give a unique number to all arrays
+  typedef numbering<exprt> array_numberingt;
+  array_numberingt arrays;
 
   // this tracks the array indicies for each array
   typedef std::set<exprt> index_sett;
-  // references to values in this container need to be stable as
-  // elements are added while references are held
   typedef std::map<std::size_t, index_sett> index_mapt;
   index_mapt index_map;
 
-  // adds array constraints lazily
-  enum class lazy_typet
-  {
-    ARRAY_ACKERMANN,
-    ARRAY_WITH,
-    ARRAY_IF,
-    ARRAY_OF,
-    ARRAY_TYPECAST
-  };
+  virtual bool is_unbounded_array(const typet &type) const=0;
+    // (maybe this function should be partially moved here from boolbv)
 
-  struct lazy_constraintt
-  {
-    lazy_typet type;
-    exprt lazy;
+  bool must_be_different(const exprt &, const exprt &);
 
-    lazy_constraintt(lazy_typet _type, const exprt &_lazy)
+  // path search
+  struct stack_entryt
+  {
+    wegt::node_indext n;
+    wegt::edgest::const_iterator next;
+    stack_entryt(
+      wegt::node_indext _n,
+      wegt::edgest::const_iterator _next):n(_n), next(_next)
     {
-      type = _type;
-      lazy = _lazy;
     }
   };
 
-  bool lazy_arrays;
-  bool incremental_cache;
-  std::list<lazy_constraintt> lazy_array_constraints;
-  void add_array_constraint(const lazy_constraintt &lazy, bool refine = true);
-  std::map<exprt, bool> expr_map;
+  typedef std::vector<stack_entryt> weg_patht;
+  void process_weg_path(const weg_patht &);
 
-  // adds all the constraints eagerly
-  void add_array_constraints();
-  void add_array_Ackermann_constraints();
+  //bool incremental_cache;
+
+  #if 0
   void add_array_constraints_equality(
     const index_sett &index_set, const array_equalityt &array_equality);
   void add_array_constraints(
@@ -113,16 +134,7 @@ protected:
     const index_sett &index_set, const update_exprt &expr);
   void add_array_constraints_array_of(
     const index_sett &index_set, const array_of_exprt &exprt);
-
-  void update_index_map(bool update_all);
-  void update_index_map(std::size_t i);
-  std::set<std::size_t> update_indices;
-  void collect_arrays(const exprt &a);
-  void collect_indices();
-  void collect_indices(const exprt &a);
-
-  virtual bool is_unbounded_array(const typet &type) const=0;
-    // (maybe this function should be partially moved here from boolbv)
+  #endif
 };
 
 #endif // CPROVER_SOLVERS_FLATTENING_ARRAYS_H

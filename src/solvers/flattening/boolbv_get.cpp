@@ -335,9 +335,6 @@ exprt boolbvt::bv_get_unbounded_array(const exprt &expr) const
     if(arrays.get_number(expr, number))
       return nil_exprt();
 
-    // get root
-    number=arrays.find_number(number);
-
     assert(number<index_map.size());
     index_mapt::const_iterator it=index_map.find(number);
     assert(it!=index_map.end());
